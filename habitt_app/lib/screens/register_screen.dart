@@ -31,7 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final FocusNode _passFocusNode = FocusNode();
   bool _obscureText = true;
   double _age = 25;
-  String _country = '';
+  String _country = 'United States';
   List<String> _countries = [];
   List<String> selectedHabits = [];
   List<String> availableHabits = [
@@ -543,6 +543,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       child: const Text(
                         'SIGNUP NOW',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).canPop()
+                            ? Navigator.of(context).pop()
+                            : null;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF183ABC),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30.0),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 80, vertical: 15),
+                      ),
+                      child: const Text(
+                        'LOGIN Now',
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 18,

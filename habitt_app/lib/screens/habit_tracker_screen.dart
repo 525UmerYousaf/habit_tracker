@@ -193,6 +193,18 @@ class _HabitTrackerScreenState extends State<HabitTrackerScreen> {
       body: Column(
         children: [
           Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Text(
+              name.isNotEmpty ? "Welcome $name" : 'Loading ...',
+              style: TextStyle(
+                color: Colors.black,
+                fontFamily: 'Poppins',
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Padding(
             padding: EdgeInsets.all(12.0),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -344,7 +356,7 @@ class _HabitTrackerScreenState extends State<HabitTrackerScreen> {
                 ),
         ],
       ),
-      floatingActionButton: selectedHabitsMap.isEmpty
+      floatingActionButton: selectedHabitsMap.isNotEmpty
           ? FloatingActionButton(
               onPressed: () {
                 // SharedPreferences prefs = await SharedPreferences.getInstance();

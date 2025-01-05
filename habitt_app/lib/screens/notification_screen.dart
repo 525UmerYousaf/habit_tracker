@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:html' as html;
-
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,10 +17,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   List<String> selectedTimes = [];
   Map<String, String> allHabitsMap = {};
 
+  late FlutterLocalNotificationsPlugin _localNotificationsPlugin;
+
   @override
   void initState() {
     super.initState();
     _loadData();
+    _initializeLocalNotifications();
   }
 
   Future<void> _loadData() async {
@@ -44,6 +47,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     await prefs.setStringList(AppConstants.notificationTimes, selectedTimes);
   }
 
+  Future<void> _initializeLocalNotifications() async {
+    _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+    const AndroidInitializationSettings androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const DarwinInitializationSettings iosSettings =
+        DarwinInitializationSettings();
+    const InitializationSettings settings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+
+    await _localNotificationsPlugin.initialize(settings);
+  }
+
   Color _getColorFromHex(String hexColor) {
     hexColor = hexColor.replaceAll('#', '');
     if (hexColor.length == 6) {
@@ -52,22 +70,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Color(int.parse('0x$hexColor'));
   }
 
-  void _sendTestNotification() {
-    if (html.Notification.permission != "granted") {
-      html.Notification.requestPermission().then((permission) {
-        if (permission == 'granted') {
-          html.Notification("Habit Reminder",
-              body: "It's time to work on your habits!");
-          print('Notification permission granted. Notification sent.');
-        } else {
-          print('Notification permission denied.');
-        }
-      });
-    } else {
-      html.Notification("Habit Reminder",
-          body: "It's time to work on your habits!");
-      print('Notification sent directly.');
-    }
+  Future<void> _sendTestNotification() async {
+    // if (html.Notification.permission != "granted") {
+    //   html.Notification.requestPermission().then((permission) {
+    //     if (permission == 'granted') {
+    //       html.Notification("Habit Reminder",
+    //           body: "It's time to work on your habits!");
+    //       print('Notification permission granted. Notification sent.');
+    //     } else {
+    //       print('Notification permission denied.');
+    //     }
+    //   });
+    // } else {
+    //   html.Notification("Habit Reminder",
+    //       body: "It's time to work on your habits!");
+    //   print('Notification sent directly.');
+    // }
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'habit_channel_id',
+      'Habit Notifications',
+      channelDescription: 'This channel is used for habit reminders',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
+    );
+
+    await _localNotificationsPlugin.show(
+      0,
+      'Habit Reminder',
+      'It\'s time to work on your habits!',
+      notificationDetails,
+    );
+
+    print('Test notification sent.');
   }
 
   @override
