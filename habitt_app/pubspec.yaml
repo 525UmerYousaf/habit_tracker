@@ -39,6 +39,7 @@ dependencies:
   http: ^1.2.2
   flutter_local_notifications: ^18.0.1
   flutter_svg: ^2.0.16
+  provider: ^6.1.2
 
 dev_dependencies:
   flutter_test:

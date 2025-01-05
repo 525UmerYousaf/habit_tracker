@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:habitt_app/utils/app_constants.dart';
 import 'package:habitt_app/utils/app_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/app_icons.dart';
+import 'habit_tracker_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,21 +23,83 @@ class _LoginScreenState extends State<LoginScreen> {
   final FocusNode _passFocusNode = FocusNode();
 
   // Default credentials
-  final String defaultUsername = 'testuser';
-  final String defaultPassword = 'password123';
+  // final String defaultUsername = 'testuser';
+  // final String defaultPassword = 'password123';
 
-  void _login() {
-    // The login logic goes here
-    var isValid = _loginFormKey.currentState!.validate();
-    if (isValid) {
-      if (_usernameController.text == defaultUsername &&
-          _passwordController.text == defaultPassword) {
-        // Navigator.of(context).pushNamed(
-        //     RouteNames.forgetPasswordScreen);
-      } else {
-        print('User want to continue with different credential');
+  // Future<void> saveUserInfoLocally(
+  //     {required SharedPreferences sharedPref}) async {
+  //   await sharedPref.setString(AppConstants.userNameVal, defaultUsername);
+  //   await sharedPref.setString(AppConstants.passwordVal, defaultPassword);
+  // }
+
+  // Future<void> fetchLocallyStoreUserInfo(
+  //     {required SharedPreferences sharedPref}) async {
+  //   String? storedUserName =
+  //       await sharedPref.getString(AppConstants.userNameVal);
+  //   String? storedPassVal =
+  //       await sharedPref.getString(AppConstants.passwordVal);
+  //   String? storedEmailVal =
+  //       await sharedPref.getString(AppConstants.userEmailVal);
+  //   if ((_usernameController.text == storedUserName ||
+  //           _usernameController.text == storedEmailVal) &&
+  //       _passwordController.text == storedPassVal) {
+  //     Navigator.pushReplacement(
+  //       context,
+  //       MaterialPageRoute(
+  //         builder: (context) =>
+  //             HabitTrackerScreen(username: _usernameController.text),
+  //       ),
+  //     );
+  //   }
+  // }
+
+  void _login() async {
+    if (!_isLoginFormValid()) return;
+    SharedPreferences sharedPref = await SharedPreferences.getInstance();
+    String? storedUserName = sharedPref.getString(AppConstants.userNameVal);
+    String? storedPassVal = sharedPref.getString(AppConstants.passwordVal);
+    String? storedEmailVal = sharedPref.getString(AppConstants.userEmailVal);
+    if (_isAuthenticated(storedUserName, storedEmailVal, storedPassVal)) {
+      if (context.mounted) {
+        Navigator.pushReplacement(
+          // ignore: use_build_context_synchronously
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                HabitTrackerScreen(username: _usernameController.text),
+          ),
+        );
       }
+    } else {
+      _showToast('User Authentication Failed');
     }
+  }
+
+  bool _isLoginFormValid() {
+    var isValid = _loginFormKey.currentState?.validate() ?? false;
+    if (!isValid) {
+      _showToast('Please fill in all fields correctly');
+    }
+    return isValid;
+  }
+
+  bool _isAuthenticated(
+      String? storedUserName, String? storedEmail, String? storedPass) {
+    return (_usernameController.text == storedUserName ||
+            _usernameController.text == storedEmail) &&
+        _passwordController.text == storedPass;
+  }
+
+  void _showToast(String message) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
   }
 
   @override

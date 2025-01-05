@@ -1,8 +1,16 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/app_constants.dart';
 import '../utils/app_icons.dart';
 import '../utils/app_router.dart';
+import '../utils/country_list.dart';
+import './habit_tracker_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -23,7 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final FocusNode _passFocusNode = FocusNode();
   bool _obscureText = true;
   double _age = 25;
-  String _country = 'United States';
+  String _country = '';
   List<String> _countries = [];
   List<String> selectedHabits = [];
   List<String> availableHabits = [
@@ -38,11 +46,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
     'Journal',
     'Walk 10,000 Steps'
   ];
+  final Map<String, Color> _habitColors = {
+    'Amber': Colors.amber,
+    'Red Accent': Colors.redAccent,
+    'Light Blue': Colors.lightBlue,
+    'Light Green': Colors.lightGreen,
+    'Purple Accent': Colors.purpleAccent,
+    'Orange': Colors.orange,
+    'Teal': Colors.teal,
+    'Deep Purple': Colors.deepPurple,
+  };
 
   @override
   void initState() {
-    _fetchCountries();
+    _loadCountries();
     super.initState();
+  }
+
+  Future<void> _loadCountries() async {
+    try {
+      List<String> countries = await fetchCountries();
+      setState(() {
+        _countries = countries;
+      });
+    } catch (e) {
+      // Handle error
+      _showToast('Error fetching countries');
+    }
   }
 
   @override
@@ -55,29 +85,97 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchCountries() async {
-    List<String> subsetCountries = [
-      'United States',
-      'Canada',
-      'United Kingdom',
-      'Australia',
-      'India',
-      'Germany',
-      'France',
-      'Japan',
-      'China',
-      'Brazil',
-      'South Africa'
-    ];
-    setState(() {
-      _countries = subsetCountries;
-      _countries.sort();
-      _country = _countries.isNotEmpty ? _countries[0] : 'United States';
-    });
+  // Future<void> _fetchCountries() async {
+  //   List<String> subsetCountries = [
+  //     'United States',
+  //     'Canada',
+  //     'United Kingdom',
+  //     'Australia',
+  //     'India',
+  //     'Germany',
+  //     'France',
+  //     'Japan',
+  //     'China',
+  //     'Brazil',
+  //     'South Africa'
+  //   ];
+  //   setState(() {
+  //     _countries = subsetCountries;
+  //     _countries.sort();
+  //     _country = _countries.isNotEmpty ? _countries[0] : 'United States';
+  //   });
+  // }
+
+  void _signUp() async {
+    print('User wants to sign up.');
+    if (!_isSignUpFormValid()) {
+      _showToast('Please fill in all fields');
+      return;
+    }
+    try {
+      await saveUserData();
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                HabitTrackerScreen(username: _fullNameController.text),
+          ),
+        );
+      }
+    } catch (e) {
+      _showToast('Failed to save user data. Please try again.');
+      print('Error saving user data: $e');
+    }
   }
 
-  void _signUp() {
-    print('User want to sign up an account.');
+  bool _isSignUpFormValid() {
+    var isValid = _signUpFormKey.currentState?.validate() ?? false;
+    return isValid && _country.isNotEmpty && selectedHabits.isNotEmpty;
+  }
+
+  void _showToast(String message) {
+    Fluttertoast.showToast(
+        msg: message,
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0);
+  }
+
+  Future<void> saveUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    // Assign random colors to selected habits.
+    Map<String, String> selectedHabitsMap = {};
+    final random = Random();
+    final colorKeys = _habitColors.keys.toList();
+    for (var habit in selectedHabits) {
+      var randomColor =
+          _habitColors[colorKeys[random.nextInt(colorKeys.length)]]!;
+      selectedHabitsMap[habit] = randomColor.value.toRadixString(16);
+    }
+    await prefs.setString(AppConstants.userNameVal, _fullNameController.text);
+    await prefs.setString(AppConstants.userEmailVal, _emailTextController.text);
+    await prefs.setString(AppConstants.passwordVal, _passTextController.text);
+    await prefs.setDouble(AppConstants.ageVal, _age);
+    await prefs.setString(AppConstants.countryVal, _country);
+    await prefs.setString(
+        AppConstants.selectedHobbiesMap, jsonEncode(selectedHabitsMap));
+    // await prefs.setStringList(AppConstants.hobbiesVal, selectedHabits);
+    await prefs.setBool(AppConstants.userLoginStatusVal, true);
+  }
+
+  void _toggleHabitSelection(String habit) {
+    setState(() {
+      if (selectedHabits.contains(habit)) {
+        selectedHabits.remove(habit);
+      } else {
+        selectedHabits.add(habit);
+      }
+    });
   }
 
   @override
@@ -404,7 +502,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       (habit) {
                         final isSelected = selectedHabits.contains(habit);
                         return GestureDetector(
-                          onTap: () => null,
+                          onTap: () => _toggleHabitSelection(habit),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 20, vertical: 10),
